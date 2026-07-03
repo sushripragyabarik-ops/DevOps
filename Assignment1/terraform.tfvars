@@ -1,0 +1,5 @@
+aws_region    = "ap-south-1"
+instance_type = "t2.micro"
+key_name      = "windows_key"
+bucket_name   = "sushripragya-devops-assignment1-2026"
+lambda_zip    = "lambda.zip"
