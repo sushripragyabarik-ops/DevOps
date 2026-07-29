@@ -1,0 +1,67 @@
+import sys
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.utils import getResolvedOptions
+
+from pyspark.sql.functions import col
+
+# Initialize Glue Job with bookmark support
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+bucket_name = "sushri-retail-data-pipeline"
+
+raw_path = f"s3://{bucket_name}/raw/"
+processed_path = f"s3://{bucket_name}/processed/"
+
+
+# --------------------------------------------------
+# 1. Read Raw CSV Data
+# --------------------------------------------------
+
+df = spark.read \
+    .option("header", "true") \
+    .option("inferSchema", "true") \
+    .csv(raw_path)
+
+
+# --------------------------------------------------
+# 2. Remove Duplicate Records
+# --------------------------------------------------
+
+df_clean = df.dropDuplicates()
+
+
+# --------------------------------------------------
+# 3. Remove Invalid Records
+# Mandatory fields:
+# order_id and unit_price
+# --------------------------------------------------
+
+df_clean = df_clean.dropna(
+    subset=[
+        "order_id",
+        "unit_price"
+    ]
+)
+
+
+# --------------------------------------------------
+# 4. Write Processed Data BONUS
+# Parquet + Snappy Compression
+# --------------------------------------------------
+
+df_clean.write \
+    .mode("overwrite") \
+    .option("compression", "snappy") \
+    .parquet(processed_path)
+
+
+job.commit()
