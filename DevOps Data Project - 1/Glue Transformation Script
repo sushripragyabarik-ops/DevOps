@@ -1,0 +1,101 @@
+import sys
+
+from pyspark.context import SparkContext
+from pyspark.sql.functions import col, round, year, month
+
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.utils import getResolvedOptions
+
+
+# Initialize Glue Job with bookmark support
+
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+
+glueContext = GlueContext(sc)
+
+spark = glueContext.spark_session
+
+
+job = Job(glueContext)
+
+job.init(args['JOB_NAME'], args)
+
+
+
+bucket_name = "sushri-retail-data-pipeline"
+
+processed_path = f"s3://{bucket_name}/processed/"
+
+curated_path = f"s3://{bucket_name}/curated/"
+
+
+
+# --------------------------------------------------
+# 1. Read Processed Parquet Data
+# --------------------------------------------------
+
+df = spark.read.parquet(processed_path)
+
+
+
+# --------------------------------------------------
+# 2. Business Transformations
+# --------------------------------------------------
+
+df_transformed = df \
+    .withColumn(
+        "total_amount",
+        round(
+            col("quantity") * col("unit_price"),
+            2
+        )
+    ) \
+    .withColumn(
+        "tax_amount",
+        round(
+            col("total_amount") * 0.18,
+            2
+        )
+    )
+
+
+
+# --------------------------------------------------
+# 3. Add Partition Columns
+# --------------------------------------------------
+
+df_transformed = df_transformed \
+    .withColumn(
+        "year",
+        year(col("order_date"))
+    ) \
+    .withColumn(
+        "month",
+        month(col("order_date"))
+    )
+
+
+
+# --------------------------------------------------
+# 4. Write Curated Data BONUS
+# Partitioned + Snappy Compression
+# --------------------------------------------------
+
+df_transformed.write \
+    .mode("overwrite") \
+    .partitionBy(
+        "year",
+        "month"
+    ) \
+    .option(
+        "compression",
+        "snappy"
+    ) \
+    .parquet(curated_path)
+
+
+
+job.commit()
