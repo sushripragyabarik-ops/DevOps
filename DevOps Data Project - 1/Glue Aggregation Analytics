@@ -1,0 +1,87 @@
+import sys
+
+from pyspark.context import SparkContext
+from pyspark.sql.functions import sum, avg, count, round
+
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.utils import getResolvedOptions
+
+
+args = getResolvedOptions(
+    sys.argv,
+    ['JOB_NAME']
+)
+
+
+sc = SparkContext()
+
+glueContext = GlueContext(sc)
+
+spark = glueContext.spark_session
+
+
+job = Job(glueContext)
+
+job.init(
+    args['JOB_NAME'],
+    args
+)
+
+
+bucket_name = "sushri-retail-data-pipeline"
+
+curated_path = f"s3://{bucket_name}/curated/"
+
+analytics_path = f"s3://{bucket_name}/analytics/"
+
+
+# Read curated transformed data
+
+df = spark.read.parquet(curated_path)
+
+
+# Create business summary
+
+aggregation_df = df.groupBy(
+    "year",
+    "month"
+).agg(
+
+    round(
+        sum("total_amount"),
+        2
+    ).alias(
+        "total_sales"
+    ),
+
+    count(
+        "order_id"
+    ).alias(
+        "total_orders"
+    ),
+
+    round(
+        avg("total_amount"),
+        2
+    ).alias(
+        "average_order_value"
+    )
+
+)
+
+
+# Write analytics output
+
+aggregation_df.write \
+    .mode("overwrite") \
+    .option(
+        "compression",
+        "snappy"
+    ) \
+    .parquet(
+        analytics_path
+    )
+
+
+job.commit()
