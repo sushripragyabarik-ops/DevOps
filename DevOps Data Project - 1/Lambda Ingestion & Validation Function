@@ -1,0 +1,35 @@
+import json
+import urllib.parse
+import boto3
+
+s3 = boto3.client('s3')
+
+def lambda_handler(event, context):
+    try:
+        # Extract bucket and file key from S3 Event
+        bucket = event['Records'][0]['s3']['bucket']['name']
+        key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
+        
+        print(f"File received in landing: s3://{bucket}/{key}")
+        
+        # Validation: Check file extension
+        if not (key.endswith('.csv') or key.endswith('.parquet')):
+            raise ValueError("Invalid file format. Only CSV or Parquet files are allowed.")
+            
+        # Define destination path in Raw zone
+        filename = key.split('/')[-1]
+        copy_source = {'Bucket': bucket, 'Key': key}
+        target_key = f"raw/{filename}"
+        
+        # Copy file from Landing to Raw zone
+        s3.copy_object(CopySource=copy_source, Bucket=bucket, Key=target_key)
+        print(f"Successfully validated and copied {key} to {target_key}")
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps('File successfully validated and copied!')
+        }
+        
+    except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        raise e
