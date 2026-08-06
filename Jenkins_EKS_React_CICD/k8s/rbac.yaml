@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: react-app-user
+  namespace: react-app
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: react-app-role
+  namespace: react-app
+
+rules:
+
+- apiGroups:
+  - ""
+
+  resources:
+  - pods
+  - services
+
+  verbs:
+  - get
+  - list
+  - watch
+
+
+- apiGroups:
+  - apps
+
+  resources:
+  - deployments
+
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: react-app-rolebinding
+  namespace: react-app
+
+subjects:
+
+- kind: ServiceAccount
+  name: react-app-user
+  namespace: react-app
+
+roleRef:
+
+  kind: Role
+  name: react-app-role
+  apiGroup: rbac.authorization.k8s.io
