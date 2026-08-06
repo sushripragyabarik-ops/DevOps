@@ -77,7 +77,7 @@ resource "aws_security_group" "ec2_sg" {
 
     protocol = "tcp"
 
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_allowed_cidr]
 
   }
 
@@ -91,7 +91,7 @@ resource "aws_security_group" "ec2_sg" {
 
     protocol = "tcp"
 
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_allowed_cidr]
 
   }
 
@@ -103,7 +103,7 @@ resource "aws_security_group" "ec2_sg" {
 
     protocol = "-1"
 
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_allowed_cidr]
 
   }
 
