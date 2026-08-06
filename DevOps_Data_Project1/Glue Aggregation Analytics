@@ -29,7 +29,7 @@ job.init(
 )
 
 
-bucket_name = "sushri-retail-data-pipeline"
+bucket_name = "<S3_BUCKET_NAME>"
 
 curated_path = f"s3://{bucket_name}/curated/"
 
