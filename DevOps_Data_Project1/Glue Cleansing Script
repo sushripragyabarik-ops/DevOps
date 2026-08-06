@@ -16,7 +16,7 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-bucket_name = "sushri-retail-data-pipeline"
+bucket_name = "<S3_BUCKET_NAME>"
 
 raw_path = f"s3://{bucket_name}/raw/"
 processed_path = f"s3://{bucket_name}/processed/"
